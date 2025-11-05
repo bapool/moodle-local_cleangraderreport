@@ -33,7 +33,7 @@ function local_cleangradereport_extend_navigation_user_settings($navigation, $us
     global $PAGE, $USER;
     
     // Only add if we're viewing grades and have permission
-    if ($PAGE->url->get_path() === '/grade/report/user/index.php') {
+    if ($PAGE->url->compare(new moodle_url('/grade/report/user/index.php'), URL_MATCH_BASE)) {
         $userid = optional_param('userid', $USER->id, PARAM_INT);
         $courseid = required_param('id', PARAM_INT);
         
@@ -61,7 +61,7 @@ function local_cleangradereport_extend_navigation_user_settings($navigation, $us
 function local_cleangradereport_before_footer() {
     global $PAGE, $CFG, $USER;
     
-    if ($PAGE->url->get_path() === '/grade/report/user/index.php') {
+    if ($PAGE->url->compare(new moodle_url('/grade/report/user/index.php'), URL_MATCH_BASE)) {
         $userid = optional_param('userid', $USER->id, PARAM_INT);
         $courseid = required_param('id', PARAM_INT);
         
@@ -78,7 +78,8 @@ function local_cleangradereport_before_footer() {
                 var printUrl = '{$CFG->wwwroot}/local/cleangradereport/print_report.php?courseid={$courseid}&userid={$userid}';
                 var printButton = document.createElement('div');
                 printButton.className = 'mb-3 local-cleangradereport-print-button';
-                printButton.innerHTML = '<a href=\"' + printUrl + '\" target=\"_blank\" class=\"btn btn-primary\"><i class=\"fa fa-print\" aria-hidden=\"true\"></i> Print Clean Report</a>';
+                var buttonText = '" . get_string('printcleanreport', 'local_cleangradereport') . "';
+                printButton.innerHTML = '<a href=\"' + printUrl + '\" target=\"_blank\" class=\"btn btn-primary\"><i class=\"fa fa-print\" aria-hidden=\"true\"></i> ' + buttonText + '</a>';
                 
                 var table = document.querySelector('.grade-report-user table, .generaltable');
                 if (table) {
@@ -123,12 +124,6 @@ function local_cleangradereport_get_grade_data($userid, $courseid) {
 /**
  * Recursively process grade items to match the desired format
  */
-/**
- * Recursively process grade items to match the desired format
- */
-/**
- * Recursively process grade items to match the desired format
- */
 function local_cleangradereport_process_grade_items($element, $userid, &$items, $level = 0) {
     global $CFG, $DB;
     
@@ -165,7 +160,7 @@ function local_cleangradereport_process_grade_items($element, $userid, &$items, 
                     
                     $items[] = array(
                         'type' => 'coursetotal',
-                        'name' => 'Course total',
+                        'name' => get_string('coursetotal', 'local_cleangradereport'),
                         'weight' => '',
                         'grade' => $gradestr,
                         'lettergrade' => $lettergrade,
@@ -236,7 +231,7 @@ function local_cleangradereport_process_grade_items($element, $userid, &$items, 
                 
                 $items[] = array(
                     'type' => 'total',
-                    'name' => $category->fullname . ' total',
+                    'name' => get_string('categorytotal', 'local_cleangradereport', $category->fullname),
                     'weight' => $weight,
                     'grade' => $gradestr,
                     'lettergrade' => $lettergrade,
@@ -343,7 +338,7 @@ function local_cleangradereport_process_grade_items($element, $userid, &$items, 
 function local_cleangradereport_before_http_headers() {
     global $PAGE;
     
-    if ($PAGE->url->get_path() === '/grade/report/user/index.php') {
+    if ($PAGE->url->compare(new moodle_url('/grade/report/user/index.php'), URL_MATCH_BASE)) {
         $PAGE->requires->css('/local/cleangradereport/styles.css');
     }
 }

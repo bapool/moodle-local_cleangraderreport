@@ -24,7 +24,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once('../../config.php');
+require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/gradelib.php');
 require_once('lib.php');
 
@@ -173,7 +173,7 @@ echo '<!DOCTYPE html>
 echo '<div class="print-button no-print">
     <button id="printBtn" onclick="printReport()">Print Report</button>
     <br><br>
-	<a href="' . $CFG->wwwroot . '/grade/report/user/index.php?id=' . $courseid . '&userid=' . $userid . '">Back to Grade Report</a>
+	<a href="' . $CFG->wwwroot . '/grade/report/user/index.php?id=' . $courseid . '&userid=' . $userid . '">' . get_string('backtogradereport', 'local_cleangradereport') . '</a>
 </div>';
 
 // Header with student name and course

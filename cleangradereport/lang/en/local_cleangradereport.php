@@ -9,3 +9,6 @@ $string['calculatedweight'] = 'Calculated Weight';
 $string['grade'] = 'Grade';
 $string['lettergrade'] = 'Letter Grade';
 $string['privacy:metadata'] = 'The Clean Grade Report plugin does not store any personal data.';
+$string['coursetotal'] = 'Course total';
+$string['categorytotal'] = '{$a} total';
+$string['backtogradereport'] = 'Back to Grade Report';
