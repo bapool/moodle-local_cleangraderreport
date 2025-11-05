@@ -20,6 +20,7 @@
  * @package    local_cleangradereport
  * @copyright  2025 Brian A. Pool, National Trail Local Schools
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
  
 defined('MOODLE_INTERNAL') || die();
 
