@@ -103,42 +103,42 @@ echo '<!DOCTYPE html>
         .item td {
             padding: 0px 3px;
         }
-		.total td {
-			font-weight: bold;
-		}
-		.coursetotal {
-			font-weight: bold;
-			background-color: #f0f0f0;
-			border: 2px solid #0066cc;
-			margin-top: 15px;
-			page-break-inside: avoid;
-		}
-		.coursetotal td {
-			padding: 8px 6px;
-			font-size: 14pt;
-			text-align: center;
-		}
-		@media print {
-			body { 
-				margin: 0.25in; 
-				font-size: 9pt;
-			}
-			.header {
-				margin-bottom: 10px;
-				font-size: 14pt;
-			}
-			td {
-				font-size: 9pt;
-				padding: 0px 2px;
-			}
-			.no-print {
-				display: none !important;
-			}
-			.coursetotal td {
-				font-size: 12pt;
-				padding: 6px 4px;
-			}
-		}
+        .total td {
+            font-weight: bold;
+        }
+        .coursetotal {
+            font-weight: bold;
+            background-color: #f0f0f0;
+            border: 2px solid #0066cc;
+            margin-top: 15px;
+            page-break-inside: avoid;
+        }
+        .coursetotal td {
+            padding: 8px 6px;
+            font-size: 14pt;
+            text-align: center;
+        }
+        @media print {
+            body { 
+                margin: 0.25in; 
+                font-size: 9pt;
+            }
+            .header {
+                margin-bottom: 10px;
+                font-size: 14pt;
+            }
+            td {
+                font-size: 9pt;
+                padding: 0px 2px;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .coursetotal td {
+                font-size: 12pt;
+                padding: 6px 4px;
+            }
+        }
         .print-button {
             margin-bottom: 20px;
             text-align: center;
@@ -173,7 +173,7 @@ echo '<!DOCTYPE html>
 echo '<div class="print-button no-print">
     <button id="printBtn" onclick="printReport()">Print Report</button>
     <br><br>
-	<a href="' . $CFG->wwwroot . '/grade/report/user/index.php?id=' . $courseid . '&userid=' . $userid . '">' . get_string('backtogradereport', 'local_cleangradereport') . '</a>
+    <a href="' . $CFG->wwwroot . '/grade/report/user/index.php?id=' . $courseid . '&userid=' . $userid . '">' . get_string('backtogradereport', 'local_cleangradereport') . '</a>
 </div>';
 
 // Header with student name and course
@@ -182,15 +182,6 @@ echo '<div class="header">' . htmlspecialchars($data['studentname']) . ' - ' . h
 // Grade table with exact formatting requested
 echo '<table>';
 
-// Find the last total item for special formatting
-$lastTotalIndex = -1;
-for ($i = count($data['items']) - 1; $i >= 0; $i--) {
-    if (isset($data['items'][$i]['istotal']) && $data['items'][$i]['istotal']) {
-        $lastTotalIndex = $i;
-        break;
-    }
-}
-
 foreach ($data['items'] as $index => $item) {
     if ($item['iscategory']) {
         // Category header row
@@ -198,17 +189,12 @@ foreach ($data['items'] as $index => $item) {
             <td colspan="4"><strong>' . htmlspecialchars($item['name']) . '</strong></td>
         </tr>';
     } else if (isset($item['iscoursetotal']) && $item['iscoursetotal']) {
-        // Course total row - highlighted and bold like categories
-        echo '<tr class="coursetotal">
-            <td colspan="4"><strong>' . htmlspecialchars($item['name']) . ': ' . htmlspecialchars($item['grade']) . ' ' . htmlspecialchars($item['lettergrade']) . '</strong></td>
-        </tr>';
-    } else if ($index === $lastTotalIndex) {
-        // Final total row - make it prominent like course total
+        // Course total row - highlighted and bold at the bottom
         echo '<tr class="coursetotal">
             <td colspan="4"><strong>' . htmlspecialchars($item['name']) . ': ' . htmlspecialchars($item['grade']) . ' ' . htmlspecialchars($item['lettergrade']) . '</strong></td>
         </tr>';
     } else {
-        // Individual grade item or category total
+        // Individual grade item or category total - all display the same way
         $indent = isset($item['level']) && $item['level'] > 1 ? str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $item['level'] - 1) : '';
         $rowClass = isset($item['istotal']) && $item['istotal'] ? 'total' : 'item';
         

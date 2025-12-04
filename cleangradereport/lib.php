@@ -119,6 +119,37 @@ function local_cleangradereport_get_grade_data($userid, $courseid) {
     // Process the root element itself to get course total
     local_cleangradereport_process_grade_items($gtree->top_element, $userid, $data['items'], 0);
     
+    // Make sure we add the course total at the end
+    $courseitem = grade_item::fetch_course_item($courseid);
+    if ($courseitem && !$courseitem->is_hidden()) {
+        $grade = new grade_grade(array('itemid' => $courseitem->id, 'userid' => $userid));
+        
+        if ($grade && $grade->id && !is_null($grade->finalgrade)) {
+            if ($courseitem->grademax > 0) {
+                $percentage = ($grade->finalgrade / $courseitem->grademax) * 100;
+                $gradestr = number_format($percentage, 2) . '%';
+            } else {
+                $gradestr = grade_format_gradevalue($grade->finalgrade, $courseitem, true);
+            }
+            
+            $lettergrade = grade_format_gradevalue($grade->finalgrade, $courseitem, true, GRADE_DISPLAY_TYPE_LETTER);
+            $lettergrade = preg_replace('/[()]/', '', $lettergrade);
+            $lettergrade = trim($lettergrade);
+            
+            $data['items'][] = array(
+                'type' => 'coursetotal',
+                'name' => get_string('coursetotal', 'local_cleangradereport'),
+                'weight' => '',
+                'grade' => $gradestr,
+                'lettergrade' => $lettergrade,
+                'iscategory' => false,
+                'istotal' => false,
+                'iscoursetotal' => true,
+                'level' => 0
+            );
+        }
+    }
+    
     return $data;
 }
 /**
@@ -130,45 +161,12 @@ function local_cleangradereport_process_grade_items($element, $userid, &$items, 
     if ($element['type'] == 'category') {
         $category = $element['object'];
         
-        // Handle the root course category (course total)
+        // Handle the root course category (course total) - just process children
         if ($level == 0 && ($category->fullname == '?' || empty(trim($category->fullname)))) {
-            // Process children first
+            // Process children only - course total will be added separately
             if (isset($element['children'])) {
                 foreach ($element['children'] as $child) {
                     local_cleangradereport_process_grade_items($child, $userid, $items, $level);
-                }
-            }
-            
-            // Now add the course total at the end
-            $gradeitem = $category->load_grade_item();
-            if (!$gradeitem->is_hidden()) {
-                $grade = new grade_grade(array('itemid' => $gradeitem->id, 'userid' => $userid));
-                
-                if ($grade->id && !is_null($grade->finalgrade)) {
-                    if ($gradeitem->grademax > 0) {
-                        $percentage = ($grade->finalgrade / $gradeitem->grademax) * 100;
-                        $gradestr = number_format($percentage, 2) . '% (' . 
-                                   grade_format_gradevalue($grade->finalgrade, $gradeitem, true, GRADE_DISPLAY_TYPE_LETTER) . ')';
-                    } else {
-                        $gradestr = grade_format_gradevalue($grade->finalgrade, $gradeitem, true) . ' (' . 
-                                   grade_format_gradevalue($grade->finalgrade, $gradeitem, true, GRADE_DISPLAY_TYPE_LETTER) . ')';
-                    }
-                    
-                    $lettergrade = grade_format_gradevalue($grade->finalgrade, $gradeitem, true, GRADE_DISPLAY_TYPE_LETTER);
-                    $lettergrade = preg_replace('/[()]/', '', $lettergrade);
-                    $lettergrade = trim($lettergrade);
-                    
-                    $items[] = array(
-                        'type' => 'coursetotal',
-                        'name' => get_string('coursetotal', 'local_cleangradereport'),
-                        'weight' => '',
-                        'grade' => $gradestr,
-                        'lettergrade' => $lettergrade,
-                        'iscategory' => false,
-                        'istotal' => false,
-                        'iscoursetotal' => true,
-                        'level' => 0
-                    );
                 }
             }
             return;
@@ -213,11 +211,9 @@ function local_cleangradereport_process_grade_items($element, $userid, &$items, 
             if ($grade->id && !is_null($grade->finalgrade)) {
                 if ($gradeitem->grademax > 0) {
                     $percentage = ($grade->finalgrade / $gradeitem->grademax) * 100;
-                    $gradestr = number_format($percentage, 2) . '% (' . 
-                               grade_format_gradevalue($grade->finalgrade, $gradeitem, true, GRADE_DISPLAY_TYPE_LETTER) . ')';
+                    $gradestr = number_format($percentage, 2) . '%';
                 } else {
-                    $gradestr = grade_format_gradevalue($grade->finalgrade, $gradeitem, true) . ' (' . 
-                               grade_format_gradevalue($grade->finalgrade, $gradeitem, true, GRADE_DISPLAY_TYPE_LETTER) . ')';
+                    $gradestr = grade_format_gradevalue($grade->finalgrade, $gradeitem, true);
                 }
                 
                 $lettergrade = grade_format_gradevalue($grade->finalgrade, $gradeitem, true, GRADE_DISPLAY_TYPE_LETTER);
@@ -314,7 +310,7 @@ function local_cleangradereport_process_grade_items($element, $userid, &$items, 
                 $lettergrade = '-';
             }
         } else {
-            // No grade record - format for display  
+            // No grade record - format for display
             $gradestr = '-';
             $lettergrade = '-';
         }
