@@ -27,7 +27,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_cleangradereport';
-$plugin->version = 2025120401;
+$plugin->version = 2025121002;
 $plugin->requires = 2023100900; // Moodle 4.3+
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = '1.1';
+$plugin->release = '1.2.1';

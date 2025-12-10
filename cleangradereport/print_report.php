@@ -184,9 +184,14 @@ echo '<table>';
 
 foreach ($data['items'] as $index => $item) {
     if ($item['iscategory']) {
-        // Category header row
+        // Category header row - indent subcategories (level > 1)
+        $categoryIndent = '';
+        if (isset($item['level']) && $item['level'] > 1) {
+            // Subcategories: indent by (level - 1) × 2 spaces
+            $categoryIndent = str_repeat('&nbsp;&nbsp;', $item['level'] - 1);
+        }
         echo '<tr class="category">
-            <td colspan="4"><strong>' . htmlspecialchars($item['name']) . '</strong></td>
+            <td colspan="4"><strong>' . $categoryIndent . htmlspecialchars($item['name']) . '</strong></td>
         </tr>';
     } else if (isset($item['iscoursetotal']) && $item['iscoursetotal']) {
         // Course total row - highlighted and bold at the bottom
@@ -194,15 +199,27 @@ foreach ($data['items'] as $index => $item) {
             <td colspan="4"><strong>' . htmlspecialchars($item['name']) . ': ' . htmlspecialchars($item['grade']) . ' ' . htmlspecialchars($item['lettergrade']) . '</strong></td>
         </tr>';
     } else {
-        // Individual grade item or category total - all display the same way
-        $indent = isset($item['level']) && $item['level'] > 1 ? str_repeat('&nbsp;&nbsp;&nbsp;&nbsp;', $item['level'] - 1) : '';
+        // Individual grade item or category total
+        // Apply indent based on level, but NOT for totals
+        $indent = '';
+        if (isset($item['level']) && $item['level'] > 0) {
+            if (isset($item['istotal']) && $item['istotal']) {
+                // Totals: indent same as their parent category (level - 1)
+                if ($item['level'] > 1) {
+                    $indent = str_repeat('&nbsp;&nbsp;', $item['level'] - 1);
+                }
+            } else {
+                // Regular items: indent by level (2 spaces per level)
+                $indent = str_repeat('&nbsp;&nbsp;', $item['level']);
+            }
+        }
         $rowClass = isset($item['istotal']) && $item['istotal'] ? 'total' : 'item';
         
         echo '<tr class="' . $rowClass . '">
-            <td style="width: 40%;">' . $indent . htmlspecialchars($item['name']) . '</td>
-            <td style="width: 15%; text-align: center;">' . htmlspecialchars($item['weight']) . '</td>
-            <td style="width: 30%; text-align: center;">' . htmlspecialchars($item['grade']) . '</td>
-            <td style="width: 15%; text-align: center;">' . htmlspecialchars($item['lettergrade']) . '</td>
+            <td style="width: 55%;">' . $indent . htmlspecialchars($item['name']) . '</td>
+            <td style="width: 12%; text-align: center;">' . htmlspecialchars($item['weight']) . '</td>
+            <td style="width: 20%; text-align: center;">' . htmlspecialchars($item['grade']) . '</td>
+            <td style="width: 13%; text-align: center;">' . htmlspecialchars($item['lettergrade']) . '</td>
         </tr>';
     }
 }
