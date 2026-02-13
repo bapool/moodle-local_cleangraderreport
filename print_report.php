@@ -1,0 +1,229 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Clean Grader Report
+ *
+ * This plugin allows teachers to print student grades more cleanly for parent conferences.
+ *
+ * @package    local_cleangradereport
+ * @copyright  2025 Brian A. Pool, National Trail Local Schools
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+require_once(__DIR__ . '/../../config.php');
+require_once($CFG->libdir . '/gradelib.php');
+require_once('lib.php');
+
+$userid = required_param('userid', PARAM_INT);
+$courseid = required_param('courseid', PARAM_INT);
+
+// Debug: Check if we have valid parameters
+if (empty($userid) || empty($courseid)) {
+    echo "Debug: userid = " . $userid . ", courseid = " . $courseid;
+    die();
+}
+
+$course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
+$user = $DB->get_record('user', array('id' => $userid), '*', MUST_EXIST);
+
+require_login($course);
+
+$context = context_course::instance($courseid);
+require_capability('gradereport/user:view', $context);
+
+// If not viewing own grades, need additional capability
+if ($userid != $USER->id) {
+    require_capability('moodle/grade:viewall', $context);
+}
+
+// Get grade data
+$data = local_cleangradereport_get_grade_data($userid, $courseid);
+
+// Set up page
+$PAGE->set_url('/local/cleangradereport/print_report.php', array('userid' => $userid, 'courseid' => $courseid));
+$PAGE->set_context($context);
+$PAGE->set_pagelayout('print');
+$PAGE->set_title(get_string('gradereport', 'local_cleangradereport'));
+
+// Don't show header/footer for clean print
+echo '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>' . $data['studentname'] . ' - ' . $data['coursename'] . '</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 10px; 
+            font-size: 10pt;
+            line-height: 1.0;
+        }
+        .header { 
+            text-align: center; 
+            font-size: 16pt; 
+            font-weight: bold; 
+            margin-bottom: 15px; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse;
+            margin: 0;
+            padding: 0;
+            page-break-inside: auto;
+        }
+        td { 
+            padding: 1px 3px; 
+            vertical-align: top;
+            border: none;
+            font-size: 10pt;
+            line-height: 1.0;
+        }
+        .category { 
+            font-weight: bold; 
+            background-color: #f0f0f0;
+            page-break-inside: avoid;
+        }
+        .category td {
+            padding: 2px 3px;
+        }
+        .item td {
+            padding: 0px 3px;
+        }
+        .total td {
+            font-weight: bold;
+        }
+        .coursetotal {
+            font-weight: bold;
+            background-color: #f0f0f0;
+            border: 2px solid #0066cc;
+            margin-top: 15px;
+            page-break-inside: avoid;
+        }
+        .coursetotal td {
+            padding: 8px 6px;
+            font-size: 14pt;
+            text-align: center;
+        }
+        @media print {
+            body { 
+                margin: 0.25in; 
+                font-size: 9pt;
+            }
+            .header {
+                margin-bottom: 10px;
+                font-size: 14pt;
+            }
+            td {
+                font-size: 9pt;
+                padding: 0px 2px;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .coursetotal td {
+                font-size: 12pt;
+                padding: 6px 4px;
+            }
+        }
+        .print-button {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .print-button button {
+            padding: 10px 20px;
+            font-size: 14px;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .print-button button:hover {
+            background-color: #0052a3;
+        }
+    </style>
+    <script>
+        function printReport() {
+            window.print();
+        }
+        
+        // Auto-focus for keyboard users
+        window.onload = function() {
+            document.getElementById("printBtn").focus();
+        }
+    </script>
+</head>
+<body>';
+
+// Print button (will be hidden when printing)
+echo '<div class="print-button no-print">
+    <button id="printBtn" onclick="printReport()">Print Report</button>
+    <br><br>
+    <a href="' . $CFG->wwwroot . '/grade/report/user/index.php?id=' . $courseid . '&userid=' . $userid . '">' . get_string('backtogradereport', 'local_cleangradereport') . '</a>
+</div>';
+
+// Header with student name and course
+echo '<div class="header">' . htmlspecialchars($data['studentname']) . ' - ' . htmlspecialchars($data['coursename']) . '</div>';
+
+// Grade table with exact formatting requested
+echo '<table>';
+
+foreach ($data['items'] as $index => $item) {
+    if ($item['iscategory']) {
+        // Category header row - indent subcategories (level > 1)
+        $categoryIndent = '';
+        if (isset($item['level']) && $item['level'] > 1) {
+            // Subcategories: indent by (level - 1) × 2 spaces
+            $categoryIndent = str_repeat('&nbsp;&nbsp;', $item['level'] - 1);
+        }
+        echo '<tr class="category">
+            <td colspan="4"><strong>' . $categoryIndent . htmlspecialchars($item['name']) . '</strong></td>
+        </tr>';
+    } else if (isset($item['iscoursetotal']) && $item['iscoursetotal']) {
+        // Course total row - highlighted and bold at the bottom
+        echo '<tr class="coursetotal">
+            <td colspan="4"><strong>' . htmlspecialchars($item['name']) . ': ' . htmlspecialchars($item['grade']) . ' ' . htmlspecialchars($item['lettergrade']) . '</strong></td>
+        </tr>';
+    } else {
+        // Individual grade item or category total
+        // Apply indent based on level, but NOT for totals
+        $indent = '';
+        if (isset($item['level']) && $item['level'] > 0) {
+            if (isset($item['istotal']) && $item['istotal']) {
+                // Totals: indent same as their parent category (level - 1)
+                if ($item['level'] > 1) {
+                    $indent = str_repeat('&nbsp;&nbsp;', $item['level'] - 1);
+                }
+            } else {
+                // Regular items: indent by level (2 spaces per level)
+                $indent = str_repeat('&nbsp;&nbsp;', $item['level']);
+            }
+        }
+        $rowClass = isset($item['istotal']) && $item['istotal'] ? 'total' : 'item';
+        
+        echo '<tr class="' . $rowClass . '">
+            <td style="width: 55%;">' . $indent . htmlspecialchars($item['name']) . '</td>
+            <td style="width: 12%; text-align: center;">' . htmlspecialchars($item['weight']) . '</td>
+            <td style="width: 20%; text-align: center;">' . htmlspecialchars($item['grade']) . '</td>
+            <td style="width: 13%; text-align: center;">' . htmlspecialchars($item['lettergrade']) . '</td>
+        </tr>';
+    }
+}
+
+echo '</table>';
+
+echo '</body></html>';
